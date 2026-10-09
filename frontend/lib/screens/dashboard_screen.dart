@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math';
+import 'chat_screen.dart';
 
 import 'package:flutter/material.dart';
 
@@ -107,7 +108,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
               width: double.infinity,
               height: 65,
               child: ElevatedButton.icon(
-                onPressed: () {},
+                onPressed: () {
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (context) =>
+          const ChatScreen(),
+    ),
+  );
+},
                 icon: const Icon(Icons.chat),
                 label: const Text(
                   "Start New Chat",
