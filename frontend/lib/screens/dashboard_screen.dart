@@ -11,18 +11,19 @@ class DashboardScreen extends StatefulWidget {
       _DashboardScreenState();
 }
 
-class _DashboardScreenState
-    extends State<DashboardScreen> {
+class _DashboardScreenState extends State<DashboardScreen> {
   late String currentGreeting;
+  Timer? timer;
 
   final List<String> greetings = [
     "How can I help you today, Lochie?",
     "What can I assist with today, Lochie?",
     "What are we working on today, Lochie?",
     "Ready when you are, Lochie.",
+    "How would you like to proceed today?",
+    "What would you like assistance with today?",
+    "Let's get started, Lochie.",
   ];
-
-  Timer? greetingTimer;
 
   @override
   void initState() {
@@ -31,14 +32,14 @@ class _DashboardScreenState
     currentGreeting =
         greetings[Random().nextInt(greetings.length)];
 
-    greetingTimer = Timer.periodic(
+    timer = Timer.periodic(
       const Duration(seconds: 6),
       (_) {
         if (!mounted) return;
 
         setState(() {
-          currentGreeting = greetings[
-              Random().nextInt(greetings.length)];
+          currentGreeting =
+              greetings[Random().nextInt(greetings.length)];
         });
       },
     );
@@ -46,11 +47,11 @@ class _DashboardScreenState
 
   @override
   void dispose() {
-    greetingTimer?.cancel();
+    timer?.cancel();
     super.dispose();
   }
 
-  String timeGreeting() {
+  String getTimeGreeting() {
     final hour = DateTime.now().hour;
 
     if (hour < 12) {
@@ -77,7 +78,7 @@ class _DashboardScreenState
               CrossAxisAlignment.start,
           children: [
             Text(
-              timeGreeting(),
+              getTimeGreeting(),
               style: const TextStyle(
                 fontSize: 18,
                 color: Colors.grey,
@@ -88,19 +89,46 @@ class _DashboardScreenState
 
             AnimatedSwitcher(
               duration: const Duration(
-                milliseconds: 500,
+                milliseconds: 400,
               ),
               child: Text(
                 currentGreeting,
                 key: ValueKey(currentGreeting),
                 style: const TextStyle(
-                  fontSize: 32,
+                  fontSize: 34,
                   fontWeight: FontWeight.bold,
                 ),
               ),
             ),
 
+            const SizedBox(height: 30),
+
+            SizedBox(
+              width: double.infinity,
+              height: 65,
+              child: ElevatedButton.icon(
+                onPressed: () {},
+                icon: const Icon(Icons.chat),
+                label: const Text(
+                  "Start New Chat",
+                  style: TextStyle(
+                    fontSize: 18,
+                  ),
+                ),
+              ),
+            ),
+
             const SizedBox(height: 40),
+
+            const Text(
+              "Quick Tools",
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+
+            const SizedBox(height: 20),
 
             Expanded(
               child: GridView.count(
@@ -108,10 +136,6 @@ class _DashboardScreenState
                 crossAxisSpacing: 20,
                 mainAxisSpacing: 20,
                 children: const [
-                  DashboardCard(
-                    title: "Chat",
-                    icon: Icons.chat,
-                  ),
                   DashboardCard(
                     title: "Summarise",
                     icon: Icons.description,
@@ -131,6 +155,10 @@ class _DashboardScreenState
                   DashboardCard(
                     title: "Knowledge Base",
                     icon: Icons.search,
+                  ),
+                  DashboardCard(
+                    title: "Research",
+                    icon: Icons.gavel,
                   ),
                 ],
               ),
@@ -155,6 +183,7 @@ class DashboardCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
+      elevation: 2,
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
         onTap: () {},
@@ -167,7 +196,7 @@ class DashboardCard extends StatelessWidget {
               size: 50,
               color: Colors.blue,
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 12),
             Text(
               title,
               style: const TextStyle(
