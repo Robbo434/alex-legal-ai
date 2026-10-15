@@ -8,6 +8,8 @@ app = FastAPI()
 
 claude = AnthropicService()
 
+conversation_history = []
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -27,8 +29,27 @@ def health_check():
 
 @app.post("/chat", response_model=ChatResponse)
 def chat(request: ChatRequest):
+    conversation_history.append(
+        {
+            "role": "user",
+            "content": request.message,
+        }
+    )
+
+    if len(conversation_history) > 20:
+        conversation_history[:] = (
+            conversation_history[-20:]
+        )
+
     answer = claude.ask_claude(
-        request.message
+        conversation_history
+    )
+
+    conversation_history.append(
+        {
+            "role": "assistant",
+            "content": answer,
+        }
     )
 
     return ChatResponse(
