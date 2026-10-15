@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:http/http.dart' as http;
 
+import '../models/conversation.dart';
+
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
 
@@ -15,9 +17,33 @@ class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController controller =
       TextEditingController();
 
-  final List<Map<String, dynamic>> messages = [];
-
   bool loading = false;
+
+  List<Conversation> conversations = [
+    Conversation(
+      title: "New Chat",
+      messages: [],
+    ),
+  ];
+
+  int selectedConversation = 0;
+
+  Conversation get currentConversation =>
+      conversations[selectedConversation];
+
+  void createNewChat() {
+    setState(() {
+      conversations.insert(
+        0,
+        Conversation(
+          title: "New Chat",
+          messages: [],
+        ),
+      );
+
+      selectedConversation = 0;
+    });
+  }
 
   Future<void> sendMessage() async {
     final text = controller.text.trim();
@@ -25,10 +51,17 @@ class _ChatScreenState extends State<ChatScreen> {
     if (text.isEmpty) return;
 
     setState(() {
-      messages.add({
+      currentConversation.messages.add({
         "message": text,
         "isUser": true,
       });
+
+      if (currentConversation.title == "New Chat") {
+        currentConversation.title =
+            text.length > 30
+                ? text.substring(0, 30)
+                : text;
+      }
 
       loading = true;
     });
@@ -51,14 +84,14 @@ class _ChatScreenState extends State<ChatScreen> {
       final data = jsonDecode(response.body);
 
       setState(() {
-        messages.add({
+        currentConversation.messages.add({
           "message": data["response"],
           "isUser": false,
         });
       });
     } catch (e) {
       setState(() {
-        messages.add({
+        currentConversation.messages.add({
           "message":
               "Error connecting to Alex backend.",
           "isUser": false,
@@ -81,7 +114,7 @@ class _ChatScreenState extends State<ChatScreen> {
           : Alignment.centerLeft,
       child: Container(
         constraints: const BoxConstraints(
-          maxWidth: 700,
+          maxWidth: 800,
         ),
         margin: const EdgeInsets.only(
           bottom: 12,
@@ -104,43 +137,6 @@ class _ChatScreenState extends State<ChatScreen> {
             : MarkdownBody(
                 data: text,
                 selectable: true,
-                styleSheet: MarkdownStyleSheet(
-                  p: const TextStyle(
-                    fontSize: 15,
-                    color: Colors.white,
-                  ),
-                  h1: const TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                  h2: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                  h3: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                  strong: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                  em: const TextStyle(
-                    fontStyle: FontStyle.italic,
-                    color: Colors.white,
-                  ),
-                  listBullet: const TextStyle(
-                    color: Colors.white,
-                  ),
-                  code: TextStyle(
-                    backgroundColor:
-                        Colors.grey.shade800,
-                    color: Colors.greenAccent,
-                  ),
-                ),
               ),
       ),
     );
@@ -149,56 +145,131 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          "Alex Chat",
-        ),
-      ),
-      body: Column(
+      body: Row(
         children: [
-          Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.all(20),
-              itemCount: messages.length,
-              itemBuilder: (context, index) {
-                final msg = messages[index];
-
-                return buildMessage(
-                  msg["message"],
-                  msg["isUser"],
-                );
-              },
-            ),
-          ),
-          if (loading)
-            const Padding(
-              padding: EdgeInsets.all(10),
-              child: CircularProgressIndicator(),
-            ),
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: Row(
+          Container(
+            width: 260,
+            color: Colors.black87,
+            child: Column(
               children: [
-                Expanded(
-                  child: TextField(
-                    controller: controller,
-                    decoration:
-                        const InputDecoration(
-                      hintText:
-                          "Ask Alex something...",
-                      border:
-                          OutlineInputBorder(),
+                Padding(
+                  padding:
+                      const EdgeInsets.all(12),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: createNewChat,
+                      icon: const Icon(Icons.add),
+                      label:
+                          const Text("New Chat"),
                     ),
-                    onSubmitted: (_) =>
-                        sendMessage(),
                   ),
                 ),
-                const SizedBox(width: 10),
-                IconButton(
-                  onPressed:
-                      loading ? null : sendMessage,
-                  icon: const Icon(
-                    Icons.send,
+                const Divider(),
+                Expanded(
+                  child: ListView.builder(
+                    itemCount:
+                        conversations.length,
+                    itemBuilder:
+                        (context, index) {
+                      final conversation =
+                          conversations[index];
+
+                      return ListTile(
+                        selected:
+                            selectedConversation ==
+                                index,
+                        leading:
+                            const Icon(Icons.chat),
+                        title: Text(
+                          conversation.title,
+                          maxLines: 1,
+                          overflow:
+                              TextOverflow
+                                  .ellipsis,
+                        ),
+                        onTap: () {
+                          setState(() {
+                            selectedConversation =
+                                index;
+                          });
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: Column(
+              children: [
+                AppBar(
+                  title: Text(
+                    currentConversation.title,
+                  ),
+                ),
+                Expanded(
+                  child: ListView.builder(
+                    padding:
+                        const EdgeInsets.all(20),
+                    itemCount:
+                        currentConversation
+                            .messages
+                            .length,
+                    itemBuilder:
+                        (context, index) {
+                      final msg =
+                          currentConversation
+                              .messages[index];
+
+                      return buildMessage(
+                        msg["message"],
+                        msg["isUser"],
+                      );
+                    },
+                  ),
+                ),
+                if (loading)
+                  const Padding(
+                    padding:
+                        EdgeInsets.all(10),
+                    child:
+                        CircularProgressIndicator(),
+                  ),
+                Padding(
+                  padding:
+                      const EdgeInsets.all(20),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller:
+                              controller,
+                          decoration:
+                              const InputDecoration(
+                            hintText:
+                                "Ask Alex something...",
+                            border:
+                                OutlineInputBorder(),
+                          ),
+                          onSubmitted:
+                              (_) =>
+                                  sendMessage(),
+                        ),
+                      ),
+                      const SizedBox(
+                        width: 10,
+                      ),
+                      IconButton(
+                        onPressed: loading
+                            ? null
+                            : sendMessage,
+                        icon: const Icon(
+                          Icons.send,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
